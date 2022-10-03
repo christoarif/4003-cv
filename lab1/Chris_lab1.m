@@ -121,11 +121,34 @@ colormap('default');
 inverse_F = uint8(ifft2(F));
 imshow(inverse_F);
 
-%% how to improve.
-
+%% TODO how to improve current result
+% the contrast of the image decrease after doing the ft noise cancellation,
+% so we can imrpove the quality by contrast stretching.
 %% 2.5f) freeing the primate by filtering out the fence.
-%TODO
+primate = imread('primatecaged.jpeg');
+primate_grey = rgb2gray(primate); 
+imshow(primate_grey)
+%%
+%start with same approach
+F_primate = fft2(primate_grey);
+S_primate = abs(F_primate).^2;
+imagesc((S_primate.^0.01));
+colormap('default');
 
+%% 
+% peaks identified: (253, 11) , ( 6,247), (248, 21), (10, 236)
+F_primate(253-2:253+2, 11-2:11+2 ) = 0;
+F_primate(6-2:6+2, 247-2:247+2) = 0;
+F_primate(248-2:248+2,21-2:21+2 ) = 0;
+F_primate(10-2:10+2, 236-2:236+2) = 0;
+
+%%
+S_primate = abs(F_primate).^2;
+imagesc((S_primate.^0.1));
+colormap('default');
+%%
+inverse_F_primate = uint8(ifft2(F_primate));
+imshow(inverse_F_primate);
 
 %% 2.6 Undoing Perspective Distortion of Planar Surface
 %2.6.a
