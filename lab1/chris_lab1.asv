@@ -126,7 +126,7 @@ imshow(inverse_F);
 %% TODO how to improve current result
 % the contrast of the image decrease after doing the ft noise cancellation,
 % so we can imrpove the quality by contrast stretching.
-[a,b] = freqspace(256,'meshgrid');
+[a,b] = freqspace(256,'meshgrid'); %reference https://www.mathworks.com/matlabcentral/fileexchange/53195-2d-low-pass-filter-mask
 d = zeros(256,256);
 for i = 1:256
     for j = 1:256
@@ -147,13 +147,38 @@ end
 imshow(H);
 %%
 % // Now filter
-rec = H .* F ; 
-S = abs(rec).^2;
-imagesc((S.^0.1));
+F_lowpassfilter = F .* ifftshift(H); 
+S = abs(F_lowpassfilter).^2;
+imagesc(ifftshift(S.^0.1));
 colormap('default');
+%%
+inverse_F = uint8(ifft2(F_lowpassfilter));
+imshow(inverse_F); % did not work very well...
 
+%% Now try other approach; blocking out the straight lines perpedincular to the peaks in the spectrum
+% actual locations of peaks : (9,241), (249,17)
+F(:, 9) = 0;
+F(241, :) = 0;
+F(17,:) = 0;
+F(:,249) = 0;
+F(241-2:241+2, 9-2:9+2) = 0;
+F( 17-2:17+2, 249-2:249+2) = 0;
+%% recompute power spectrum and display
+S = abs(F).^2;
+imagesc(fftshift(S.^0.1));
+colormap('default'); 
 
+inverse_F = uint8(ifft2(F));
+imshow(inverse_F); %looks much better now!
 
+%% lastly, contrast stretching. 
+inverse_F = imsubtract(inverse_F, double(min(inverse_F(:))));
+inverse_F2 = immultiply(inverse_F, (255 ./ double(max(inverse_F(:))-min(inverse_F(:)))));
+
+%check min and max pixel value 
+min_inverse_F2 = min(inverse_F2(:)); %should be 0 
+max_inverse_F2 = max(inverse_F2(:)); %should be 255
+imshow(inverse_F2);
 %% 2.5f) freeing the primate by filtering out the fence.
 primate = imread('primatecaged.jpeg');
 primate_grey = rgb2gray(primate); 
@@ -162,7 +187,7 @@ imshow(primate_grey)
 %start with same approach
 F_primate = fft2(primate_grey);
 S_primate = abs(F_primate).^2;
-imagesc((S_primate.^0.01));
+imagesc(ifftshift(S_primate.^0.01));
 colormap('default');
 
 %% 
@@ -171,7 +196,7 @@ F_primate(253-2:253+2, 11-2:11+2 ) = 0;
 F_primate(6-2:6+2, 247-2:247+2) = 0;
 F_primate(248-2:248+2,21-2:21+2 ) = 0;
 F_primate(10-2:10+2, 236-2:236+2) = 0;
-
+%F_primate(F_primate>1000000) = 0;
 %%
 S_primate = abs(F_primate).^2;
 imagesc((S_primate.^0.1));
@@ -179,6 +204,10 @@ colormap('default');
 %%
 inverse_F_primate = uint8(ifft2(F_primate));
 imshow(inverse_F_primate);
+
+
+
+
 
 %% 2.6 Undoing Perspective Distortion of Planar Surface
 %2.6.a
